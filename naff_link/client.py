@@ -148,4 +148,5 @@ class Client:
         return Track.from_dict(data["tracks"][0])
 
     async def decode_track(self, track: str):
-        return await self.rest.decode_track(track)
+        data = await self.rest.decode_track(track)
+        return Track.from_dict(data | {"track": track})
