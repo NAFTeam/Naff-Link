@@ -1,8 +1,8 @@
 import asyncio
 
 import aiohttp
-from naff import Snowflake_Type, to_snowflake, Listener
 from naff import Client as NaffClient
+from naff import Snowflake_Type, to_snowflake, Listener
 from naff.api.events import RawGatewayEvent
 
 from . import get_logger
@@ -90,8 +90,7 @@ class Client:
         """
         # if track is a url, resolve it first
         if track.startswith("http"):
-            tracks = await self.resolve_track(track)
-            track = tracks[0]
+            track = await self.resolve_track(track)
 
         await self.ws.play(to_snowflake(guild_id), str(track))
 
@@ -144,9 +143,9 @@ class Client:
         await self.ws.volume(to_snowflake(guild_id), volume)
         return volume
 
-    async def resolve_track(self, track: str) -> list[Track]:
+    async def resolve_track(self, track: str) -> Track:
         data = await self.rest.resolve_track(track)
-        return [Track.from_dict(track) for track in data["tracks"]]
+        return Track.from_dict(data["tracks"][0])
 
     async def decode_track(self, track: str):
         return await self.rest.decode_track(track)
