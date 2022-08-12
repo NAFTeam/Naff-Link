@@ -143,6 +143,10 @@ class Client:
         await self.ws.volume(to_snowflake(guild_id), volume)
         return volume
 
+    async def search(self, query, *, engine: str = "ytsearch"):
+        data = await self.rest.resolve_track(f"{engine}: {query}")
+        return [Track.from_dict(track) for track in data["tracks"]]
+
     async def resolve_track(self, track: str) -> Track:
         data = await self.rest.resolve_track(track)
         return Track.from_dict(data["tracks"][0])
