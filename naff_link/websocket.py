@@ -2,12 +2,11 @@ import asyncio
 
 import aiohttp
 from aiohttp import ClientWebSocketResponse
-from naff import Client as NaffClient, Listener
-from naff.api.events import RawGatewayEvent
+from naff import Client as NaffClient
 from naff.api.gateway.gateway import GatewayClient as NaffGateway
 from naff.client.utils import OverriddenJson
-from naff_link import events
 
+from naff_link import events
 from . import get_logger
 from .enums import OPCodes as OP
 
@@ -20,17 +19,10 @@ class WebSocket:
         client,
         bot_client: NaffClient,
         naff_gateway: NaffGateway,
-        host: str,
-        port: int,
-        password: str,
     ):
         self.client = client
         self.bot_client: NaffClient = bot_client
         self.naff_gateway: NaffGateway = naff_gateway
-
-        self.host: str = host
-        self.port: int = port
-        self.password: str = password
 
         self.__session: aiohttp.ClientSession = client.session
         self.__ws: ClientWebSocketResponse = None
@@ -66,14 +58,16 @@ class WebSocket:
 
     async def connect(self):
         headers = {
-            "Authorization": self.password,
+            "Authorization": self.client.password,
             "User-Id": str(self.bot_client.app.id),
             "Client-Name": "Naff-Link",
         }
 
         log.debug(f"Attempting to connect to lavalink as {headers['Client-Name']} {headers['User-Id']}")
         try:
-            self.__ws = await self.__session.ws_connect(f"ws://{self.host}:{self.port}/", headers=headers, heartbeat=60)
+            self.__ws = await self.__session.ws_connect(
+                f"ws://{self.client.host}:{self.client.port}/", headers=headers, heartbeat=60
+            )
         except Exception as e:
             breakpoint()
         else:

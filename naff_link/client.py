@@ -7,27 +7,51 @@ from naff.api.events import RawGatewayEvent
 
 from . import get_logger
 from .models.voice_state import VoiceState
+from .rest_api import RESTClient
 from .websocket import WebSocket
 
 log = get_logger()
 
 
 class Client:
-    def __init__(self, naff):
+    def __init__(self, naff, hostname: str, port: int, password: str):
         self.session = None
 
         self.ws: WebSocket = None
+        self.rest: RESTClient = None
         self.naff: NaffClient = naff
 
         self.session_id = {}
 
+        self.host: str = hostname
+        self.port: int = port
+        self.password: str = password
+
         # hook into naff's event dispatcher
         self.naff.add_listener(Listener.create("raw_voice_server_update")(self._on_voice_server_update))
 
-    async def connect(self, host: str, port: int, password):
-        self.session = aiohttp.ClientSession()
-        self.ws = WebSocket(self, self.naff, self.naff.ws, host, port, password)
-        await self.ws.connect()
+    @classmethod
+    async def connect_to(cls, naff_client: NaffClient, host: str, port: int, password: str, *, timeout: int = 5):
+        """
+        Connect to Lavalink.
+
+        Args:
+            naff_client: The naff client your bot is using
+            host: The host to connect to
+            port: The port to connect to
+            password: The password to connect with
+            timeout: The timeout to wait for the connection to complete (in seconds)
+        """
+        session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout))
+        instance = cls(naff_client, host, port, password)
+
+        instance.session = session
+        instance.rest = RESTClient(instance)
+        instance.ws = WebSocket(instance, naff_client, naff_client.ws)
+
+        await instance.ws.connect()
+
+        return instance
 
     async def _on_voice_server_update(self, event: RawGatewayEvent):
         guild_id = int(event.data["guild_id"])
@@ -115,19 +139,7 @@ class Client:
         return volume
 
     async def resolve_track(self, track: str):
-        headers = {"Authorization": self.ws.password}
-        async with self.session.get(
-            f"http://{self.ws.host}:{self.ws.port}/loadtracks?identifier={track}",
-            headers=headers,
-        ) as resp:
-            data = await resp.json()
-        return data["tracks"]
+        return await self.rest.resolve_track(track)
 
     async def decode_track(self, track: str):
-        headers = {"Authorization": self.ws.password}
-        async with self.session.get(
-            f"http://{self.ws.host}:{self.ws.port}/decodetrack?track={track}",
-            headers=headers,
-        ) as resp:
-            data = await resp.json()
-        return data
+        return await self.rest.decode_track(track)
