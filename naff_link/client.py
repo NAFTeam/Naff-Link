@@ -88,6 +88,11 @@ class Client:
             guild_id: The guild id to play the track in
             track: The track to play
         """
+        # if track is a url, resolve it first
+        if track.startswith("http"):
+            tracks = await self.resolve_track(track)
+            track = tracks[0]
+
         await self.ws.play(to_snowflake(guild_id), str(track))
 
     async def stop(self, guild_id: Snowflake_Type):
