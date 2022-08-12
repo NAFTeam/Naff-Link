@@ -24,7 +24,6 @@ class Client:
         self.naff: NaffClient = naff
 
         self.session_ids = {}
-        self.track_cache = {}
 
         self.host: str = hostname
         self.port: int = port
@@ -78,18 +77,6 @@ class Client:
             else:
                 await voice_state.track_update(None)
 
-    def cache_track(self, track: Track | dict) -> Track:
-        """
-        Cache a track.
-
-        Args:
-            track: The track to cache
-        """
-        if isinstance(track, dict):
-            track = Track.from_dict(track)
-        self.track_cache[track.encoded] = track
-        return track
-
     async def voice_connect(self, channel: Snowflake_Type, guild: Snowflake_Type, *, timeout: int = 5):
         log.info("Attempting to connect voice to %s", channel)
 
@@ -123,8 +110,6 @@ class Client:
         # if track is a url, resolve it first
         if isinstance(track, str) and track.startswith("http"):
             track = await self.resolve_track(track)
-
-        self.cache_track(track)
 
         await self.ws.play(to_snowflake(guild_id), str(track))
 
@@ -189,7 +174,7 @@ class Client:
             A list of tracks that match then given query
         """
         data = await self.rest.resolve_track(f"{engine}: {query}")
-        return [self.cache_track(track) for track in data["tracks"]]
+        return [Track.from_dict(track) for track in data["tracks"]]
 
     async def resolve_track(self, track: str) -> Track:
         """
@@ -202,8 +187,7 @@ class Client:
             The resolved track
         """
         data = await self.rest.resolve_track(track)
-        track = Track.from_dict(data["tracks"][0])
-        return self.cache_track(track)
+        return Track.from_dict(data["tracks"][0])
 
     async def decode_track(self, track: str) -> Track:
         """
@@ -216,4 +200,4 @@ class Client:
             The decoded track
         """
         data = await self.rest.decode_track(track)
-        return self.cache_track(data | {"track": track})
+        return Track.from_dict(data | {"track": track})

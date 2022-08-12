@@ -5,6 +5,7 @@ from attr import define, field
 from naff.api.events import BaseEvent
 
 from naff_link.models.player_state import PlayerState
+from naff_link.models.track import Track
 
 if TYPE_CHECKING:
     from naff_link.client import Client
@@ -35,21 +36,21 @@ class PlayerUpdate(_BaseLavaEvent):
 
 @define()
 class TrackStart(_BaseLavaEvent):
-    _track_identifier: str = field()
+    _track_encode: str = field()
     guild_id: int = field()
 
     @property
     def track(self):
-        return self.naff_link.track_cache.get(self._track_identifier, None)
+        return Track.from_encode(self._track_encode)
 
-    async def get_track(self):
-        data = await self.naff_link.decode_track(self._track_identifier)
+    async def fetch_track(self):
+        data = await self.naff_link.decode_track(self._track_encode)
         return data
 
     @classmethod
     def from_dict(cls, naff_link: "Client", data: dict):
         return cls(
-            track_identifier=data["track"],
+            track_encode=data["track"],
             guild_id=data["guildId"],
             naff_link=naff_link,
         )
@@ -62,7 +63,7 @@ class TrackEnd(TrackStart):
     @classmethod
     def from_dict(cls, naff_link: "Client", data: dict):
         return cls(
-            track_identifier=data["track"],
+            track_encode=data["track"],
             guild_id=data["guildId"],
             reason=data["reason"],
             naff_link=naff_link,
