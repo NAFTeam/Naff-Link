@@ -143,14 +143,42 @@ class Client:
         await self.ws.volume(to_snowflake(guild_id), volume)
         return volume
 
-    async def search(self, query, *, engine: str = "ytsearch"):
+    async def search(self, query, *, engine: str = "ytsearch") -> list[Track]:
+        """
+        Search for a track.
+
+        Args:
+            query: The query to search for
+            engine: The engine to search with (default ytsearch)
+
+        Returns:
+            A list of tracks that match then given query
+        """
         data = await self.rest.resolve_track(f"{engine}: {query}")
         return [Track.from_dict(track) for track in data["tracks"]]
 
     async def resolve_track(self, track: str) -> Track:
+        """
+        Resolve a track into a format that can be played.
+
+        Args:
+            track: The track to resolve
+
+        Returns:
+            The resolved track
+        """
         data = await self.rest.resolve_track(track)
         return Track.from_dict(data["tracks"][0])
 
-    async def decode_track(self, track: str):
+    async def decode_track(self, track: str) -> Track:
+        """
+        Decode lavalink's encoded track name into a track object.
+
+        Args:
+            track: The track string to decode
+
+        Returns:
+            The decoded track
+        """
         data = await self.rest.decode_track(track)
         return Track.from_dict(data | {"track": track})
