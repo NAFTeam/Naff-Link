@@ -6,6 +6,8 @@ from naff import VoiceState as NAFFVoiceState
 from naff import Client as NAFFClient
 from naff.client.utils import optional
 
+from naff_link.events import PlayerUpdate
+from naff_link.models.track import Track
 
 if TYPE_CHECKING:
     from naff_link.client import Client as NaffLinkClient
@@ -15,7 +17,7 @@ if TYPE_CHECKING:
 class VoiceState(NAFFVoiceState):
     naff_link: "NaffLinkClient" = field()
 
-    current_track: dict = field(default=None)
+    current_track: Track = field(default=None)
 
     _volume: float = field(default=100)
     _playing: bool = field(default=False)
@@ -33,8 +35,16 @@ class VoiceState(NAFFVoiceState):
     async def _voice_server_update(self, *args) -> None:
         return
 
-    async def _voice_state_update(self, *args) -> None:
-        return
+    async def _voice_state_update(self, _, __, data) -> None:
+        self.update_from_dict(data)
+
+    async def player_state_update(self, event: PlayerUpdate):
+        if self.current_track:
+            self.current_track.position = event.state.position
+
+    async def track_update(self, track: Track) -> None:
+        """Update the current track"""
+        self.current_track = track
 
     @classmethod
     def from_dict(cls, data: dict, naff_client: NAFFClient, naff_link: "NaffLinkClient"):

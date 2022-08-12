@@ -6,6 +6,7 @@ from naff import Snowflake_Type, to_snowflake, Listener
 from naff.api.events import RawGatewayEvent
 
 from . import get_logger
+from .events import PlayerUpdate, TrackStart
 from .models.track import Track
 from .models.voice_state import VoiceState
 from .rest_api import RESTClient
@@ -22,7 +23,8 @@ class Client:
         self.rest: RESTClient = None
         self.naff: NaffClient = naff
 
-        self.session_id = {}
+        self.session_ids = {}
+        self.track_cache = {}
 
         self.host: str = hostname
         self.port: int = port
@@ -30,6 +32,9 @@ class Client:
 
         # hook into naff's event dispatcher
         self.naff.add_listener(Listener.create("raw_voice_server_update")(self._on_voice_server_update))
+        self.naff.add_listener(Listener.create("player_update")(self._player_state_update))
+        self.naff.add_listener(Listener.create("track_start")(self._track_update))
+        self.naff.add_listener(Listener.create("track_end")(self._track_update))
 
     @classmethod
     async def connect_to(cls, naff_client: NaffClient, host: str, port: int, password: str, *, timeout: int = 5):
@@ -56,7 +61,34 @@ class Client:
 
     async def _on_voice_server_update(self, event: RawGatewayEvent):
         guild_id = int(event.data["guild_id"])
-        await self.ws.voice_server_update(guild_id, self.session_id[guild_id], event.data)
+        await self.ws.voice_server_update(guild_id, self.session_ids[guild_id], event.data)
+
+    async def _player_state_update(self, event: PlayerUpdate):
+        """Called when a player state update is received. Updates active voice states with data provided."""
+        voice_state = self.naff.cache.get_bot_voice_state(event.guild_id)
+        if voice_state:
+            await voice_state.player_state_update(event)
+
+    async def _track_update(self, event: TrackStart):
+        """Called when a track starts playing. Updates active voice states with the track data."""
+        voice_state = self.naff.cache.get_bot_voice_state(event.guild_id)
+        if voice_state:
+            if isinstance(event, TrackStart):
+                await voice_state.track_update(event.track)
+            else:
+                await voice_state.track_update(None)
+
+    def cache_track(self, track: Track | dict) -> Track:
+        """
+        Cache a track.
+
+        Args:
+            track: The track to cache
+        """
+        if isinstance(track, dict):
+            track = Track.from_dict(track)
+        self.track_cache[track.encoded] = track
+        return track
 
     async def voice_connect(self, channel: Snowflake_Type, guild: Snowflake_Type, *, timeout: int = 5):
         log.info("Attempting to connect voice to %s", channel)
@@ -73,7 +105,7 @@ class Client:
             voice_state = await self.naff.wait_for("raw_voice_state_update", predicate, timeout=timeout)
         except asyncio.TimeoutError as e:
             raise asyncio.TimeoutError("Timed out waiting for voice_state_update and voice_server_update") from e
-        self.session_id[guild_id] = voice_state.data["session_id"]
+        self.session_ids[guild_id] = voice_state.data["session_id"]
 
         state = VoiceState.from_dict(voice_state.data, self.naff, self)
         # replace the naff-client's voice state with our own
@@ -89,8 +121,10 @@ class Client:
             track: The track to play
         """
         # if track is a url, resolve it first
-        if track.startswith("http"):
+        if isinstance(track, str) and track.startswith("http"):
             track = await self.resolve_track(track)
+
+        self.cache_track(track)
 
         await self.ws.play(to_snowflake(guild_id), str(track))
 
@@ -155,7 +189,7 @@ class Client:
             A list of tracks that match then given query
         """
         data = await self.rest.resolve_track(f"{engine}: {query}")
-        return [Track.from_dict(track) for track in data["tracks"]]
+        return [self.cache_track(track) for track in data["tracks"]]
 
     async def resolve_track(self, track: str) -> Track:
         """
@@ -168,7 +202,8 @@ class Client:
             The resolved track
         """
         data = await self.rest.resolve_track(track)
-        return Track.from_dict(data["tracks"][0])
+        track = Track.from_dict(data["tracks"][0])
+        return self.cache_track(track)
 
     async def decode_track(self, track: str) -> Track:
         """
@@ -181,4 +216,4 @@ class Client:
             The decoded track
         """
         data = await self.rest.decode_track(track)
-        return Track.from_dict(data | {"track": track})
+        return self.cache_track(data | {"track": track})

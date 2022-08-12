@@ -38,7 +38,11 @@ class TrackStart(_BaseLavaEvent):
     _track_identifier: str = field()
     guild_id: int = field()
 
-    async def track(self):
+    @property
+    def track(self):
+        return self.naff_link.track_cache.get(self._track_identifier, None)
+
+    async def get_track(self):
         data = await self.naff_link.decode_track(self._track_identifier)
         return data
 

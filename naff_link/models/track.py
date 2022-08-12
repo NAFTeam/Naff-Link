@@ -1,5 +1,9 @@
 from attr import define, field
 
+from naff_link import get_logger
+
+log = get_logger()
+
 
 @define()
 class Track:
@@ -32,18 +36,21 @@ class Track:
         if "info" in data:
             data |= {k: v for k, v in data["info"].items()}
 
-        return cls(
-            encoded=data["track"],
-            uri=data["uri"],
-            identifier=data["identifier"],
-            title=data["title"],
-            author=data["author"],
-            source_name=data["sourceName"],
-            is_seekable=data["isSeekable"],
-            is_stream=data["isStream"],
-            position=data["position"],
-            length=data["length"],
-        )
+        try:
+            return cls(
+                encoded=data["track"],
+                uri=data["uri"],
+                identifier=data["identifier"],
+                title=data["title"],
+                author=data["author"],
+                source_name=data["sourceName"],
+                is_seekable=data["isSeekable"],
+                is_stream=data["isStream"],
+                position=data["position"],
+                length=data["length"],
+            )
+        except KeyError as e:
+            log.error(f"Missing key in track data: {e} :: {data}")
 
     def __str__(self) -> str:
         return self.encoded
