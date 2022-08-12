@@ -10,7 +10,7 @@ class Track:
 
     identifier: str = field()
     """A unique identifier for this track"""
-    title: str = field()
+    title: str = field(repr=True)
     """The title of this track"""
     author: str = field()
     """The author of this track"""
@@ -29,18 +29,26 @@ class Track:
 
     @classmethod
     def from_dict(cls, data: dict):
+        if "info" in data:
+            data |= {k: v for k, v in data["info"].items()}
+
         return cls(
             encoded=data["track"],
-            uri=data["info"]["uri"],
-            identifier=data["info"]["identifier"],
-            title=data["info"]["title"],
-            author=data["info"]["author"],
-            source_name=data["info"]["sourceName"],
-            is_seekable=data["info"]["isSeekable"],
-            is_stream=data["info"]["isStream"],
-            position=data["info"]["position"],
-            length=data["info"]["length"],
+            uri=data["uri"],
+            identifier=data["identifier"],
+            title=data["title"],
+            author=data["author"],
+            source_name=data["sourceName"],
+            is_seekable=data["isSeekable"],
+            is_stream=data["isStream"],
+            position=data["position"],
+            length=data["length"],
         )
 
     def __str__(self) -> str:
         return self.encoded
+
+    def __repr__(self) -> str:
+        if self.author:
+            return f"<Track {self.title} by {self.author}>"
+        return f"<Track {self.title}>"
