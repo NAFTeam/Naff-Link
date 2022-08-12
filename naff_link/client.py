@@ -6,6 +6,7 @@ from naff import Client as NaffClient
 from naff.api.events import RawGatewayEvent
 
 from . import get_logger
+from .models.track import Track
 from .models.voice_state import VoiceState
 from .rest_api import RESTClient
 from .websocket import WebSocket
@@ -138,8 +139,9 @@ class Client:
         await self.ws.volume(to_snowflake(guild_id), volume)
         return volume
 
-    async def resolve_track(self, track: str):
-        return await self.rest.resolve_track(track)
+    async def resolve_track(self, track: str) -> list[Track]:
+        data = await self.rest.resolve_track(track)
+        return [Track.from_dict(track) for track in data["tracks"]]
 
     async def decode_track(self, track: str):
         return await self.rest.decode_track(track)
