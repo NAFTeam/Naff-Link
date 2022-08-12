@@ -1,0 +1,11 @@
+class OPCodes:
+    connect = "connect"
+    voice_server_update = "voiceUpdate"
+    voice_disconnect = "disconnect"
+    validationRes = "validationRes"
+    isConnectedRes = "isConnectedRes"
+    audio_play = "play"
+    audio_stop = "stop"
+    audio_pause = "pause"
+    audio_seek = "seek"
+    audio_volume = "volume"
