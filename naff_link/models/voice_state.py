@@ -100,6 +100,19 @@ class VoiceState(NAFFVoiceState):
             raise StreamException("Cannot seek in streams")
         raise NotPlayingException("Cannot seek when not playing")
 
+    async def pause(self) -> None:
+        """Pause the player"""
+        if self._paused:
+            await self.naff_link.resume(self.guild.id)
+        else:
+            await self.naff_link.pause(self.guild.id)
+        self._paused = not self._paused
+
+    async def resume(self) -> None:
+        """Resume the player"""
+        await self.naff_link.resume(self.guild.id)
+        self._paused = False
+
     async def play(self, track: str) -> dict:
         """Play a track"""
         return await self.naff_link.play(self.guild.id, track)
