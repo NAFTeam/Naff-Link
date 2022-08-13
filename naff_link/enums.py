@@ -10,3 +10,4 @@ class OPCodes:
     audio_seek = "seek"
     audio_volume = "volume"
     equalizer = "equalizer"
+    filters = "filters"

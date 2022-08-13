@@ -10,6 +10,7 @@ from naff.client.utils import optional
 from naff_link.errors import StreamException, NotPlayingException
 from naff_link.events import PlayerUpdate
 from naff_link.models.equalizer import Equalizer
+from naff_link.models.filters import Filter
 from naff_link.models.track import Track
 
 if TYPE_CHECKING:
@@ -103,6 +104,15 @@ class VoiceState(NAFFVoiceState):
             eq: The equalizer to set
         """
         return await self.naff_link.set_equalizer(self.guild.id, eq)
+
+    async def set_filters(self, *filters: Filter | dict) -> None:
+        """
+        Set the filters of the player
+
+        Args:
+            *filters: The filters to set
+        """
+        return await self.naff_link.set_filters(self.guild.id, *filters)
 
     async def seek(self, position: float) -> float:
         """

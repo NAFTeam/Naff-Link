@@ -8,6 +8,7 @@ from naff.api.events import RawGatewayEvent
 from . import get_logger
 from .events import PlayerUpdate, TrackStart
 from .models.equalizer import Equalizer
+from .models.timescale import Filter
 from .models.track import Track
 from .models.voice_state import VoiceState
 from .rest_api import RESTClient
@@ -237,3 +238,19 @@ class Client:
 
         payload = eq.to_payload()
         await self.ws.set_equalizer(guild_id, payload)
+
+    async def set_filters(self, guild_id: Snowflake_Type, *filters: Filter | dict) -> None:
+        """
+        Set the filters for a guild.
+
+        Args:
+            guild_id: The guild id to set the filters in
+            *filters: The filters to set
+        """
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Setting filters to {filters}")
+
+        payload = {}
+        for _f in filters:
+            payload |= _f.to_payload() if isinstance(_f, Filter) else _f
+        await self.ws.set_filters(guild_id, payload)
