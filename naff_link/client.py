@@ -7,6 +7,7 @@ from naff.api.events import RawGatewayEvent
 
 from . import get_logger
 from .events import PlayerUpdate, TrackStart
+from .models.equalizer import Equalizer
 from .models.track import Track
 from .models.voice_state import VoiceState
 from .rest_api import RESTClient
@@ -222,3 +223,17 @@ class Client:
         """
         data = await self.rest.decode_track(track)
         return Track.from_dict(data | {"track": track})
+
+    async def set_equalizer(self, guild_id: Snowflake_Type, eq: Equalizer) -> None:
+        """
+        Set the equalizer for a guild.
+
+        Args:
+            guild_id: The guild id to set the equalizer in
+            eq: The eq to set
+        """
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Setting equalizer to {eq}")
+
+        payload = eq.to_payload()
+        await self.ws.set_equalizer(guild_id, payload)

@@ -53,6 +53,9 @@ class WebSocket:
     async def volume(self, guild_id, volume: int):
         await self.send_json({"op": OP.audio_volume, "guildId": str(guild_id), "volume": volume})
 
+    async def set_equalizer(self, guild_id, payload):
+        await self.send_json({"op": OP.equalizer, "guildId": str(guild_id), "bands": payload})
+
     async def send_json(self, data: dict):
         log.debug(f"Sending data to lavalink :: {data}")
         await self.__ws.send_json(data)

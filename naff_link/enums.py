@@ -9,3 +9,4 @@ class OPCodes:
     audio_pause = "pause"
     audio_seek = "seek"
     audio_volume = "volume"
+    equalizer = "equalizer"

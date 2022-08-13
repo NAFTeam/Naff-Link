@@ -7,6 +7,7 @@ from naff import Client as NAFFClient
 from naff.client.utils import optional
 
 from naff_link.events import PlayerUpdate
+from naff_link.models.equalizer import Equalizer
 from naff_link.models.track import Track
 
 if TYPE_CHECKING:
@@ -71,6 +72,15 @@ class VoiceState(NAFFVoiceState):
         set_volume = await self.naff_link.volume(self.guild.id, volume)
         self._volume = set_volume
         return set_volume
+
+    async def set_equalizer(self, eq: Equalizer) -> None:
+        """
+        Set the equalizer of the player
+
+        Args:
+            eq: The equalizer to set
+        """
+        return await self.naff_link.set_equalizer(self.guild.id, eq)
 
     async def play(self, track: str) -> dict:
         """Play a track"""
