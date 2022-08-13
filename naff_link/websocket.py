@@ -1,7 +1,7 @@
 import asyncio
 
 import aiohttp
-from aiohttp import ClientWebSocketResponse
+from aiohttp import ClientWebSocketResponse, ClientConnectionError
 from naff import Client as NaffClient
 from naff.api.gateway.gateway import GatewayClient as NaffGateway
 from naff.client.utils import OverriddenJson
@@ -9,6 +9,7 @@ from naff.client.utils import OverriddenJson
 from naff_link import events
 from . import get_logger
 from .enums import OPCodes as OP
+from .errors import LinkConnectionError
 
 log = get_logger()
 
@@ -68,6 +69,8 @@ class WebSocket:
             self.__ws = await self.__session.ws_connect(
                 f"ws://{self.client.host}:{self.client.port}/", headers=headers, heartbeat=60
             )
+        except ClientConnectionError as e:
+            raise LinkConnectionError("Failed to connect to lavalink - are you sure lavalink is running?") from e
         except Exception as e:
             breakpoint()
         else:

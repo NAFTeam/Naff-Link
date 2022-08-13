@@ -1,0 +1,6 @@
+class LinkException(Exception):
+    ...
+
+
+class LinkConnectionError(LinkException):
+    ...
