@@ -1,11 +1,12 @@
 from typing import Optional, TYPE_CHECKING
 
 from attr import define, field
-from naff import MISSING, to_snowflake, Timestamp
-from naff import VoiceState as NAFFVoiceState
 from naff import Client as NAFFClient
+from naff import MISSING, to_snowflake
+from naff import VoiceState as NAFFVoiceState
 from naff.client.utils import optional
 
+from naff_link.errors import StreamException, NotPlayingException
 from naff_link.events import PlayerUpdate
 from naff_link.models.equalizer import Equalizer
 from naff_link.models.track import Track
@@ -81,6 +82,23 @@ class VoiceState(NAFFVoiceState):
             eq: The equalizer to set
         """
         return await self.naff_link.set_equalizer(self.guild.id, eq)
+
+    async def seek(self, position: float) -> float:
+        """
+        Seek to a position in the track
+
+        Args:
+            position: The position to seek to (in seconds)
+
+        Raises:
+            NotPlayingException: If the player is not playing
+            StreamException: If the player is playing a stream
+        """
+        if self.current_track:
+            if not self.current_track.is_stream:
+                return await self.naff_link.seek(self.guild.id, position)
+            raise StreamException("Cannot seek in streams")
+        raise NotPlayingException("Cannot seek when not playing")
 
     async def play(self, track: str) -> dict:
         """Play a track"""
