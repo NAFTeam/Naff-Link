@@ -73,15 +73,21 @@ class Client:
         voice_state = self.naff.cache.get_bot_voice_state(event.guild_id)
         if voice_state:
             if isinstance(event, TrackStart):
+                log.info(
+                    f"{event.guild_id}::Started {'streaming' if event.track.is_stream else 'playing'} {event.track.title}"
+                )
                 await voice_state.track_update(event.track)
             else:
+                log.info(
+                    f"{event.guild_id}::Stopped {'streaming' if event.track.is_stream else 'playing'}  {event.track.title}"
+                )
                 await voice_state.track_update(None)
 
     async def voice_connect(self, channel: Snowflake_Type, guild: Snowflake_Type, *, timeout: int = 5):
-        log.info("Attempting to connect voice to %s", channel)
-
         guild_id = to_snowflake(guild)
         channel_id = to_snowflake(channel)
+
+        log.debug(f"Attempting to connect voice to {guild_id}::{channel_id}")
 
         def predicate(event):
             return int(event.data["guild_id"]) == guild_id
@@ -97,6 +103,7 @@ class Client:
         state = VoiceState.from_dict(voice_state.data, self.naff, self)
         # replace the naff-client's voice state with our own
         self.naff.cache.place_bot_voice_state(state)
+        log.info(f"Successfully connected voice to {guild_id}::{channel_id}")
         return state
 
     async def play(self, guild_id: Snowflake_Type, track):
@@ -107,11 +114,14 @@ class Client:
             guild_id: The guild id to play the track in
             track: The track to play
         """
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Track Requested: {track}")
+
         # if track is a url, resolve it first
         if isinstance(track, str) and track.startswith("http"):
             track = await self.resolve_track(track)
 
-        await self.ws.play(to_snowflake(guild_id), str(track))
+        await self.ws.play(guild_id, str(track))
 
     async def stop(self, guild_id: Snowflake_Type):
         """
@@ -120,7 +130,9 @@ class Client:
         Args:
             guild_id: The guild id to stop playing the track in
         """
-        await self.ws.stop(to_snowflake(guild_id))
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Stopping playback")
+        await self.ws.stop(guild_id)
 
     async def pause(self, guild_id: Snowflake_Type):
         """
@@ -129,7 +141,9 @@ class Client:
         Args:
             guild_id: The guild id to pause the track in
         """
-        await self.ws.pause(to_snowflake(guild_id))
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Pausing playback")
+        await self.ws.pause(guild_id)
 
     async def resume(self, guild_id: Snowflake_Type):
         """
@@ -138,7 +152,9 @@ class Client:
         Args:
             guild_id: The guild id to resume the track in
         """
-        await self.ws.pause(to_snowflake(guild_id), False)
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Resuming playback")
+        await self.ws.pause(guild_id, False)
 
     async def seek(self, guild_id: Snowflake_Type, position: float):
         """
@@ -148,7 +164,9 @@ class Client:
             guild_id: The guild id to seek in
             position: The position to seek to (in seconds)
         """
-        await self.ws.seek(to_snowflake(guild_id), int(position * 1000))
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Seeking to {position}")
+        await self.ws.seek(guild_id, int(position * 1000))
 
     async def volume(self, guild_id: Snowflake_Type, volume: float) -> float:
         """
@@ -159,6 +177,9 @@ class Client:
             volume: The volume to set (0-1000)
         """
         volume = min(max(0, volume), 1000)
+        guild_id = to_snowflake(guild_id)
+        log.debug(f"{guild_id}::Setting volume to {volume}")
+
         await self.ws.volume(to_snowflake(guild_id), volume)
         return volume
 
