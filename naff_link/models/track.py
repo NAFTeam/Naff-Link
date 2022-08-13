@@ -1,4 +1,5 @@
 import struct
+import time
 from base64 import b64decode
 from io import BytesIO
 
@@ -34,6 +35,8 @@ class Track:
     """The current playback position in seconds"""
     length: int = field(default=0, converter=lambda x: x / 1000)
     """The length of the track in seconds"""
+    timestamp: int = field(factory=lambda: time.time())
+    """The timestamp of when this track was last updated"""
 
     @classmethod
     def from_dict(cls, data: dict):

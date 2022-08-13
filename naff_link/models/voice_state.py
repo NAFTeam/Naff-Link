@@ -1,3 +1,4 @@
+from time import time
 from typing import Optional, TYPE_CHECKING
 
 from attr import define, field
@@ -42,7 +43,8 @@ class VoiceState(NAFFVoiceState):
 
     async def player_state_update(self, event: PlayerUpdate):
         if self.current_track:
-            self.current_track.position = event.state.position
+            self.current_track.position = int(event.state.position * 1000)
+            self.current_track.timestamp = event.state.time
 
     async def track_update(self, track: Track) -> None:
         """Update the current track"""
@@ -67,6 +69,25 @@ class VoiceState(NAFFVoiceState):
     def playing(self) -> bool:
         """Is the player currently playing"""
         return self._playing
+
+    @property
+    def position(self) -> float:
+        """
+        Get the position of the player.
+
+        Extrapolates the position of the player to account for lavalinks 5 second precision.
+
+        Returns:
+            The position of the player (in seconds)
+        """
+        if not self.current_track:
+            return 0.0
+
+        if self.paused:
+            return self.current_track.position
+
+        delta = (time() * 1000 - self.current_track.timestamp) / 1000
+        return min(self.current_track.position + delta, self.current_track.length)
 
     async def set_volume(self, volume: float) -> float:
         """Set the volume of the player"""
