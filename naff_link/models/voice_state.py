@@ -10,7 +10,7 @@ from naff.client.utils import optional
 from naff_link.errors import StreamException, NotPlayingException
 from naff_link.events import PlayerUpdate
 from naff_link.models.equalizer import Equalizer
-from naff_link.models.filters import Filter
+from naff_link.models.filters import Filter, Timescale
 from naff_link.models.track import Track
 
 if TYPE_CHECKING:
@@ -31,6 +31,9 @@ class VoiceState(NAFFVoiceState):
     user_id: "Snowflake_Type" = field(default=MISSING, converter=optional(to_snowflake))
     _guild_id: Optional["Snowflake_Type"] = field(default=None, converter=optional(to_snowflake))
     _member_id: Optional["Snowflake_Type"] = field(default=None, converter=optional(to_snowflake))
+
+    _filters: list[Filter] = field(factory=list)
+    _equalizer: Equalizer = field(factory=Equalizer.flat)
 
     def __attrs_post_init__(self) -> None:
         # jank line to handle the two inherently incompatible data structures
@@ -103,6 +106,7 @@ class VoiceState(NAFFVoiceState):
         Args:
             eq: The equalizer to set
         """
+        self._equalizer = eq
         return await self.naff_link.set_equalizer(self.guild.id, eq)
 
     async def set_filters(self, *filters: Filter | dict) -> None:
@@ -112,7 +116,26 @@ class VoiceState(NAFFVoiceState):
         Args:
             *filters: The filters to set
         """
+        self._filters = list(filters)
         return await self.naff_link.set_filters(self.guild.id, *filters)
+
+    async def add_filter(self, *filters: Filter | dict) -> None:
+        """
+        Add filters to the player
+
+        Args:
+            *filters: The filters to add
+        """
+        self._filters.extend(filters)
+        return await self.naff_link.set_filters(self.guild.id, *self._filters)
+
+    def get_filters(self):
+        """Get the filters of the player"""
+        return self._filters
+
+    def get_equalizer(self):
+        """Get the equalizer of the player"""
+        return self._equalizer
 
     async def seek(self, position: float) -> float:
         """
