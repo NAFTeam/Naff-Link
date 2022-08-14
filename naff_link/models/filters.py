@@ -3,14 +3,15 @@ from abc import abstractmethod
 from attr import define, field
 
 
+@define()
 class Filter:
     @abstractmethod
     def to_payload(self) -> dict:
         raise NotImplementedError()
 
 
-@define()
-class Timescale(filter):
+@define(kw_only=True)
+class Timescale(Filter):
     # todo: When this filter is in use, use it to extrapolate the track's position
     speed: float = field(default=1)
     """The playback speed multiplier"""
@@ -24,7 +25,7 @@ class Timescale(filter):
         return {"timescale": {"speed": self.speed, "pitch": self.pitch, "rate": self.rate}}
 
 
-@define()
+@define(kw_only=True)
 class Tremolo(Filter):
     """Rapidly changes the volume of a track"""
 
@@ -38,7 +39,7 @@ class Tremolo(Filter):
         return {"tremolo": {"frequency": self.frequency, "depth": self.depth}}
 
 
-@define()
+@define(kw_only=True)
 class Vibrato(Filter):
     """Rapidly changes the pitch of a track"""
 
@@ -52,7 +53,7 @@ class Vibrato(Filter):
         return {"vibrato": {"frequency": self.frequency, "depth": self.depth}}
 
 
-@define()
+@define(kw_only=True)
 class Rotation(Filter):
     speed: float = field(default=1)
     """The speed of rotation"""
@@ -62,7 +63,7 @@ class Rotation(Filter):
         return {"rotation": {"speed": self.speed}}
 
 
-@define()
+@define(kw_only=True)
 class Distortion(Filter):
     sin_offset: float = field(default=0)
     sin_scale: float = field(default=1)
@@ -92,7 +93,7 @@ class Distortion(Filter):
         }
 
 
-@define()
+@define(kw_only=True)
 class ChannelMix(Filter):
     """Mixes the channels of a track"""
 
@@ -143,7 +144,7 @@ class ChannelMix(Filter):
         return cls(left_to_left=-0, left_to_right=1, right_to_left=1, right_to_right=-0)
 
 
-@define()
+@define(kw_only=True)
 class LowPassFilter(Filter):
     smoothing: float = field(default=100)
 
@@ -152,7 +153,7 @@ class LowPassFilter(Filter):
         return {"lowPass": {"smoothing": self.smoothing}}
 
 
-@define()
+@define(kw_only=True)
 class HighPassFilter(Filter):
     smoothing: float = field(default=100)
 
