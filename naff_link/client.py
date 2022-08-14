@@ -8,7 +8,7 @@ from naff.api.events import RawGatewayEvent
 from . import get_logger
 from .events import PlayerUpdate, TrackStart
 from .models.equalizer import Equalizer
-from .models.timescale import Filter
+from .models.filters import Filter
 from .models.track import Track
 from .models.voice_state import VoiceState
 from .rest_api import RESTClient
@@ -108,13 +108,26 @@ class Client:
         log.info(f"Successfully connected voice to {guild_id}::{channel_id}")
         return state
 
-    async def play(self, guild_id: Snowflake_Type, track):
+    async def play(
+        self,
+        guild_id: Snowflake_Type,
+        track,
+        *,
+        start_time: float = 0,
+        end_time: int = None,
+        volume: int = None,
+        paused: bool = False,
+    ):
         """
         Play a track.
 
         Args:
             guild_id: The guild id to play the track in
             track: The track to play
+            start_time: The time to start playing the track at
+            end_time: The time to stop playing the track at
+            volume: The volume to play the track at
+            paused: Whether to start the track paused
         """
         guild_id = to_snowflake(guild_id)
         log.debug(f"{guild_id}::Track Requested: {track}")
@@ -123,7 +136,12 @@ class Client:
         if isinstance(track, str) and track.startswith("http"):
             track = await self.resolve_track(track)
 
-        await self.ws.play(guild_id, str(track))
+        if start_time:
+            start_time *= 1000
+        if end_time:
+            end_time *= 1000
+
+        await self.ws.play(guild_id, str(track), start_time=start_time, end_time=end_time, volume=volume, pause=paused)
 
     async def stop(self, guild_id: Snowflake_Type):
         """

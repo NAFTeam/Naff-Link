@@ -167,6 +167,19 @@ class VoiceState(NAFFVoiceState):
         await self.naff_link.resume(self.guild.id)
         self._paused = False
 
-    async def play(self, track: str) -> dict:
-        """Play a track"""
-        return await self.naff_link.play(self.guild.id, track)
+    async def play(
+        self, track: str, *, start_time: int = 0, end_time: int = None, volume: int = None, paused: bool = False
+    ) -> dict:
+        """
+        Play a track
+
+        Args:
+            track: The track to play
+            start_time: The time to start playing the track at
+            end_time: The time to stop playing the track at
+            volume: The volume to play the track at
+            paused: Whether to start the track paused
+        """
+        return await self.naff_link.play(
+            self.guild.id, track, start_time=start_time, end_time=end_time, volume=volume, paused=paused
+        )

@@ -37,8 +37,16 @@ class WebSocket:
         }
         await self.send_json(data)
 
-    async def play(self, guild_id, track):
-        data = {"op": OP.audio_play, "guildId": str(guild_id), "track": track}
+    async def play(
+        self, guild_id, track, *, start_time: float = 0, end_time: float = None, volume: int = None, pause: bool = False
+    ):
+        data = {"op": OP.audio_play, "guildId": str(guild_id), "track": track, "startTime": start_time, "pause": pause}
+
+        if end_time is not None:
+            data["endTime"] = end_time
+        if volume is not None:
+            data["volume"] = volume
+
         await self.send_json(data)
 
     async def stop(self, guild_id):
