@@ -154,9 +154,21 @@ class LowPassFilter(Filter):
 
 
 @define(kw_only=True)
-class HighPassFilter(Filter):
-    smoothing: float = field(default=100)
+class Karaoke(Filter):
+    """A karaoke filter - used to remove the vocals from a track"""
+
+    level: float = field(default=1)
+    mono_level: float = field(default=1)
+    filter_band: float = field(default=220)
+    filter_width: float = field(default=200)
 
     def to_payload(self) -> dict:
-        """Convert the LowPassFilter to a payload for lavalink"""
-        return {"highPass": {"smoothing": self.smoothing}}
+        """Convert the Karaoke to a payload for lavalink"""
+        return {
+            "karaoke": {
+                "level": self.level,
+                "mono_level": self.mono_level,
+                "filter_band": self.filter_band,
+                "filter_width": self.filter_width,
+            }
+        }
