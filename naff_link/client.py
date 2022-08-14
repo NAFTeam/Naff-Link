@@ -6,7 +6,7 @@ from naff import Snowflake_Type, to_snowflake, Listener
 from naff.api.events import RawGatewayEvent
 
 from . import get_logger
-from .events import PlayerUpdate, TrackStart
+from .events import PlayerUpdate, TrackStart, TrackEnd
 from .models.equalizer import Equalizer
 from .models.filters import Filter
 from .models.track import Track
@@ -74,14 +74,14 @@ class Client:
         """Called when a track starts playing. Updates active voice states with the track data."""
         voice_state = self.naff.cache.get_bot_voice_state(event.guild_id)
         if voice_state:
-            if isinstance(event, TrackStart):
+            if isinstance(event, TrackEnd):
                 log.info(
-                    f"{event.guild_id}::Started {'streaming' if event.track.is_stream else 'playing'} {event.track.title}"
+                    f"{event.guild_id}::Stopped {'streaming' if event.track.is_stream else 'playing'} {event.track.title}"
                 )
                 await voice_state.track_update(event.track)
             else:
                 log.info(
-                    f"{event.guild_id}::Stopped {'streaming' if event.track.is_stream else 'playing'}  {event.track.title}"
+                    f"{event.guild_id}::Started {'streaming' if event.track.is_stream else 'playing'}  {event.track.title}"
                 )
                 await voice_state.track_update(None)
 
