@@ -114,5 +114,7 @@ class WebSocket:
                 self.bot_client.dispatch(events.TrackStart.from_dict(self.client, event))
             case "TrackEndEvent":
                 self.bot_client.dispatch(events.TrackEnd.from_dict(self.client, event))
+            case "TrackStuckEvent":
+                self.bot_client.dispatch(events.TrackStuck.from_dict(self.client, event))
             case _:
                 log.error(f"Unknown event (`{event['type']}`) received from lavalink :: {event}")

@@ -80,12 +80,18 @@ class TrackException(_BaseLavaEvent):
 
 
 @define()
-class TrackStuck(_BaseLavaEvent):
-    ...
+class TrackStuck(TrackStart):
+    threshold: float = field(converter=lambda x: x / 1000)
+    """The threshold in seconds"""
 
     @classmethod
     def from_dict(cls, naff_link: "Client", data: dict):
-        ...
+        return cls(
+            track_encode=data["track"],
+            guild_id=data["guildId"],
+            threshold=data["thresholdMs"],
+            naff_link=naff_link,
+        )
 
 
 # aforementioned blackjack and hookers
