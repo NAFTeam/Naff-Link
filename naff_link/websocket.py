@@ -104,8 +104,6 @@ class WebSocket:
                     await self.event_dispatcher(data)
                 case "stats":
                     self.bot_client.dispatch(events.StatsUpdate.from_dict(self.client, data))
-                    # we don't do anything with these yet
-                    ...
                 case _:
                     log.debug(f"Unknown payload received from lavalink:: {resp.type} :: {resp.data}")
 
