@@ -78,12 +78,12 @@ class Client:
                 log.info(
                     f"{event.guild_id}::Stopped {'streaming' if event.track.is_stream else 'playing'} {event.track.title}"
                 )
-                await voice_state.track_update(event.track)
+                await voice_state.track_update(None)
             else:
                 log.info(
                     f"{event.guild_id}::Started {'streaming' if event.track.is_stream else 'playing'}  {event.track.title}"
                 )
-                await voice_state.track_update(None)
+                await voice_state.track_update(event.track)
 
     async def voice_connect(self, channel: Snowflake_Type, guild: Snowflake_Type, *, timeout: int = 5):
         guild_id = to_snowflake(guild)
