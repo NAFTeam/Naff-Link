@@ -103,6 +103,7 @@ class WebSocket:
                 case "event":
                     await self.event_dispatcher(data)
                 case "stats":
+                    self.bot_client.dispatch(events.StatsUpdate.from_dict(self.client, data))
                     # we don't do anything with these yet
                     ...
                 case _:

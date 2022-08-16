@@ -5,6 +5,7 @@ from attr import define, field
 from naff.api.events import BaseEvent
 
 from naff_link.models.player_state import PlayerState
+from naff_link.models.stats import Stats
 from naff_link.models.track import Track
 
 if TYPE_CHECKING:
@@ -92,6 +93,15 @@ class TrackStuck(TrackStart):
             threshold=data["thresholdMs"],
             naff_link=naff_link,
         )
+
+
+@define()
+class StatsUpdate(_BaseLavaEvent):
+    stats: Stats = field()
+
+    @classmethod
+    def from_dict(cls, naff_link: "Client", data: dict):
+        return cls(stats=Stats.from_dict(data), naff_link=naff_link)
 
 
 # aforementioned blackjack and hookers
