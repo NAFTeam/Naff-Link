@@ -37,6 +37,8 @@ class Stats:
 
     @property
     def deficit_frames_percent(self) -> float:
+        if not self.sent_frames:
+            return 0
         return self.deficit_frames / self.sent_frames * 100
 
     @classmethod
