@@ -1,7 +1,8 @@
 import asyncio
+from typing import TYPE_CHECKING
 
 import aiohttp
-from aiohttp import ClientWebSocketResponse, ClientConnectionError
+from aiohttp import ClientWebSocketResponse, ClientConnectionError, WSMsgType
 from naff import Client as NaffClient
 from naff.api.gateway.gateway import GatewayClient as NaffGateway
 from naff.client.utils import OverriddenJson
@@ -10,6 +11,9 @@ from naff_link import events
 from . import get_logger
 from .enums import OPCodes as OP
 from .errors import LinkConnectionError
+
+if TYPE_CHECKING:
+    from naff_link.models.instance import Instance
 
 log = get_logger()
 
@@ -20,13 +24,19 @@ class WebSocket:
         client,
         bot_client: NaffClient,
         naff_gateway: NaffGateway,
+        instance: "Instance",
     ):
         self.client = client
         self.bot_client: NaffClient = bot_client
         self.naff_gateway: NaffGateway = naff_gateway
+        self.__instance: "Instance" = instance
 
         self.__session: aiohttp.ClientSession = client.session
         self.__ws: ClientWebSocketResponse = None
+
+    @property
+    def is_connected(self) -> bool:
+        return self.__ws is not None and self.__ws.closed
 
     async def voice_server_update(self, guild_id, session_id, data):
         data = {
@@ -73,7 +83,7 @@ class WebSocket:
 
     async def connect(self):
         headers = {
-            "Authorization": self.client.password,
+            "Authorization": self.__instance.password,
             "User-Id": str(self.bot_client.app.id),
             "Client-Name": "Naff-Link",
         }
@@ -81,7 +91,7 @@ class WebSocket:
         log.debug(f"Attempting to connect to lavalink as {headers['Client-Name']} {headers['User-Id']}")
         try:
             self.__ws = await self.__session.ws_connect(
-                f"ws://{self.client.host}:{self.client.port}/", headers=headers, heartbeat=60
+                f"ws://{self.__instance.host}:{self.__instance.port}/", headers=headers, heartbeat=60
             )
         except ClientConnectionError as e:
             raise LinkConnectionError("Failed to connect to lavalink - are you sure lavalink is running?") from e
@@ -94,6 +104,9 @@ class WebSocket:
     async def rcv(self):
         while True:
             resp = await self.__ws.receive()
+            if resp.type in (WSMsgType.CLOSED, WSMsgType.CLOSE):
+                log.error(f"Lavalink websocket closed :: {self.__instance.name}")
+                break
 
             data = OverriddenJson.loads(resp.data)
 
@@ -103,6 +116,7 @@ class WebSocket:
                 case "event":
                     await self.event_dispatcher(data)
                 case "stats":
+                    self.__instance.update_stats(data)
                     self.bot_client.dispatch(events.StatsUpdate.from_dict(self.client, data))
                 case _:
                     log.debug(f"Unknown payload received from lavalink:: {resp.type} :: {resp.data}")

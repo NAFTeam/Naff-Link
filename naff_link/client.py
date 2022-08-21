@@ -5,31 +5,25 @@ from naff import Client as NaffClient
 from naff import Snowflake_Type, to_snowflake, Listener
 from naff.api.events import RawGatewayEvent
 
+from instance_manager import InstanceManager
 from . import get_logger
 from .events import PlayerUpdate, TrackStart, TrackEnd
 from .models.equalizer import Equalizer
 from .models.filters import Filter
 from .models.track import Track
 from .models.voice_state import VoiceState
-from .rest_api import RESTClient
-from .websocket import WebSocket
 
 log = get_logger()
 
 
 class Client:
-    def __init__(self, naff, hostname: str, port: int, password: str):
+    def __init__(self, naff):
         self.session = None
 
-        self.ws: WebSocket = None
-        self.rest: RESTClient = None
+        self._instance_manager = InstanceManager(self)
         self.naff: NaffClient = naff
 
         self.session_ids = {}
-
-        self.host: str = hostname
-        self.port: int = port
-        self.password: str = password
 
         # hook into naff's event dispatcher
         self.naff.add_listener(Listener.create("raw_voice_server_update")(self._on_voice_server_update))
@@ -38,31 +32,34 @@ class Client:
         self.naff.add_listener(Listener.create("track_end")(self._track_update))
 
     @classmethod
-    async def connect_to(cls, naff_client: NaffClient, host: str, port: int, password: str, *, timeout: int = 5):
+    async def initialize(cls, naff_client: NaffClient, *, timeout: int = 5):
         """
-        Connect to Lavalink.
+        Initialize the client.
+        Args:
+            naff_client: The bot's naff client
+            timeout: Timeout for aiohttp
+        """
+        session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout))
+        inst = cls(naff_client)
+        inst.session = session
+        return inst
+
+    async def connect_to(self, host: str, port: int, password: str, *, region: str | None = None):
+        """
+        Connect to Lavalink a lavalink instance.
 
         Args:
-            naff_client: The naff client your bot is using
             host: The host to connect to
             port: The port to connect to
             password: The password to connect with
-            timeout: The timeout to wait for the connection to complete (in seconds)
+            region: The region this instance is best suited for
         """
-        session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout))
-        instance = cls(naff_client, host, port, password)
-
-        instance.session = session
-        instance.rest = RESTClient(instance)
-        instance.ws = WebSocket(instance, naff_client, naff_client.ws)
-
-        await instance.ws.connect()
-
-        return instance
+        await self._instance_manager.connect_to_instance(host, port, password, region=region)
 
     async def _on_voice_server_update(self, event: RawGatewayEvent):
         guild_id = int(event.data["guild_id"])
-        await self.ws.voice_server_update(guild_id, self.session_ids[guild_id], event.data)
+
+        await self._instance_manager.voice_server_update(guild_id, self.session_ids[guild_id], event.data)
 
     async def _player_state_update(self, event: PlayerUpdate):
         """Called when a player state update is received. Updates active voice states with data provided."""
@@ -141,7 +138,9 @@ class Client:
         if end_time:
             end_time *= 1000
 
-        await self.ws.play(guild_id, str(track), start_time=start_time, end_time=end_time, volume=volume, pause=paused)
+        await self._instance_manager.play(
+            guild_id, str(track), start_time=start_time, end_time=end_time, volume=volume, pause=paused
+        )
 
     async def stop(self, guild_id: Snowflake_Type):
         """
@@ -152,7 +151,8 @@ class Client:
         """
         guild_id = to_snowflake(guild_id)
         log.debug(f"{guild_id}::Stopping playback")
-        await self.ws.stop(guild_id)
+
+        await self._instance_manager.stop(guild_id)
 
     async def pause(self, guild_id: Snowflake_Type):
         """
@@ -163,7 +163,8 @@ class Client:
         """
         guild_id = to_snowflake(guild_id)
         log.debug(f"{guild_id}::Pausing playback")
-        await self.ws.pause(guild_id)
+
+        await self._instance_manager.pause(guild_id)
 
     async def resume(self, guild_id: Snowflake_Type):
         """
@@ -174,7 +175,8 @@ class Client:
         """
         guild_id = to_snowflake(guild_id)
         log.debug(f"{guild_id}::Resuming playback")
-        await self.ws.pause(guild_id, False)
+
+        await self._instance_manager.pause(guild_id, False)
 
     async def seek(self, guild_id: Snowflake_Type, position: float):
         """
@@ -186,7 +188,8 @@ class Client:
         """
         guild_id = to_snowflake(guild_id)
         log.debug(f"{guild_id}::Seeking to {position}")
-        await self.ws.seek(guild_id, int(position * 1000))
+
+        await self._instance_manager.seek(guild_id, int(position * 1000))
 
     async def volume(self, guild_id: Snowflake_Type, volume: float) -> float:
         """
@@ -200,7 +203,7 @@ class Client:
         guild_id = to_snowflake(guild_id)
         log.debug(f"{guild_id}::Setting volume to {volume}")
 
-        await self.ws.volume(to_snowflake(guild_id), volume)
+        await self._instance_manager.volume(to_snowflake(guild_id), volume)
         return volume
 
     async def search(self, query, *, engine: str = "ytsearch") -> list[Track]:
@@ -214,7 +217,7 @@ class Client:
         Returns:
             A list of tracks that match then given query
         """
-        data = await self.rest.resolve_track(f"{engine}: {query}")
+        data = await self._instance_manager.resolve_track(f"{engine.strip()}:{query}")
         return [Track.from_dict(track) for track in data["tracks"]]
 
     async def resolve_track(self, track: str) -> Track:
@@ -227,7 +230,8 @@ class Client:
         Returns:
             The resolved track
         """
-        data = await self.rest.resolve_track(track)
+
+        data = await self._instance_manager.resolve_track(track)
         return Track.from_dict(data["tracks"][0])
 
     async def decode_track(self, track: str) -> Track:
@@ -240,7 +244,7 @@ class Client:
         Returns:
             The decoded track
         """
-        data = await self.rest.decode_track(track)
+        data = await self._instance_manager.decode_track(track)
         return Track.from_dict(data | {"track": track})
 
     async def set_equalizer(self, guild_id: Snowflake_Type, eq: Equalizer) -> None:
@@ -255,7 +259,8 @@ class Client:
         log.debug(f"{guild_id}::Setting equalizer to {eq}")
 
         payload = eq.to_payload()
-        await self.ws.set_equalizer(guild_id, payload)
+
+        await self._instance_manager.set_equalizer(guild_id, payload)
 
     async def set_filters(self, guild_id: Snowflake_Type, *filters: Filter | dict) -> None:
         """
@@ -271,4 +276,5 @@ class Client:
         payload = {}
         for _f in filters:
             payload |= _f.to_payload() if isinstance(_f, Filter) else _f
-        await self.ws.set_filters(guild_id, payload)
+
+        await self._instance_manager.set_filters(guild_id, payload)

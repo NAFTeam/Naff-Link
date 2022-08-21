@@ -1,15 +1,16 @@
 class RESTClient:
-    def __init__(self, naff_link):
+    def __init__(self, naff_link, instance):
         self.naff_link = naff_link
+        self.instance = instance
         self.session = naff_link.session
 
     @property
     def base_url(self):
-        return f"http://{self.naff_link.host}:{self.naff_link.port}"
+        return f"http://{self.instance.host}:{self.instance.port}"
 
     @property
     def headers(self):
-        return {"Authorization": self.naff_link.password}
+        return {"Authorization": self.instance.password}
 
     async def request(self, method, url, **kwargs) -> dict:
         """

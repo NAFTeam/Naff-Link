@@ -16,7 +16,8 @@ class Bot(Client):
 
     @listen()
     async def on_startup(self):
-        self.naff_link = await LinkClient.connect_to(self, "localhost", 2333, "youshallnotpass")
+        self.naff_link = await LinkClient.initialize(self)
+        self.naff_link.connect_to("localhost", 2333, "youshallnotpass")
     
     @slash_command("play")
     @slash_option("song", "the song to play", opt_type=3, required=True)

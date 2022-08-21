@@ -41,6 +41,11 @@ class Stats:
             return 0
         return self.deficit_frames / self.sent_frames * 100
 
+    @property
+    def average_deficit_frames(self) -> float:
+        if not self.deficit_frames:
+            return 0
+
     @classmethod
     def from_dict(cls, data: dict):
         memory = data["memory"]
