@@ -10,6 +10,7 @@ from naff_link.models.track import Track
 
 if TYPE_CHECKING:
     from naff_link.client import Client
+    from naff_link.models.instance import Instance
 
 
 @define()
@@ -98,10 +99,11 @@ class TrackStuck(TrackStart):
 @define()
 class StatsUpdate(_BaseLavaEvent):
     stats: Stats = field()
+    instance: "Instance" = field()
 
     @classmethod
-    def from_dict(cls, naff_link: "Client", data: dict):
-        return cls(stats=Stats.from_dict(data), naff_link=naff_link)
+    def from_dict(cls, naff_link: "Client", instance: "Instance", data: dict):
+        return cls(stats=Stats.from_dict(data), naff_link=naff_link, instance=instance)
 
 
 # aforementioned blackjack and hookers
