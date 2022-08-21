@@ -30,7 +30,6 @@ class Instance:
 
     _ws: WebSocket = field(default=MISSING)
     _rest: RESTClient = field(default=MISSING)
-    _local_players: int = field(default=0)
 
     @classmethod
     def create(cls, client, host, port, password, *, region=None, name_override=None):
@@ -63,7 +62,7 @@ class Instance:
         # derived from https://github.com/freyacodes/Lavalink-Client/blob/master/src/main/java/lavalink/client/io/LavalinkLoadBalancer.java        playing_players = self.stats.playing_players
         if not self.stats:
             return float("inf")
-        playing_players = max(self.stats.playing_players, self._local_players)
+        playing_players = self.stats.playing_players
         try:
             cpu_penalty = 1.05 ** (100 * self.stats.system_load) * 10 - 10
         except TypeError:
