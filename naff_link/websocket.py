@@ -102,13 +102,8 @@ class WebSocket:
         asyncio.create_task(self.rcv())
 
     async def rcv(self):
-        while True:
-            resp = await self.__ws.receive()
-            if resp.type in (WSMsgType.CLOSED, WSMsgType.CLOSE):
-                log.error(f"Lavalink websocket closed :: {self.__instance.name}")
-                break
-
-            data = OverriddenJson.loads(resp.data)
+        async for message in self.__ws:
+            data = OverriddenJson.loads(message.data)
 
             match data["op"]:
                 case "playerUpdate":
@@ -118,7 +113,8 @@ class WebSocket:
                 case "stats":
                     self.__instance.update_stats(data)
                 case _:
-                    log.debug(f"Unknown payload received from lavalink:: {resp.type} :: {resp.data}")
+                    log.debug(f"Unknown payload received from lavalink:: {message.type} :: {message.data}")
+        log.warning(f"{self.__instance.name}:: Websocket Disconnected")
 
     async def event_dispatcher(self, event: dict):
         match event["type"]:
