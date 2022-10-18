@@ -63,6 +63,7 @@ class InstanceManager:
         """
         Finds the ideal instance to use for the given region.
         """
+        instances = {}
 
         if region:
             if region not in self._cached_regions:
@@ -70,7 +71,7 @@ class InstanceManager:
                     f"Region {region} is not a valid region - please refer to the discord API docs for valid regions"
                 )
             instances = self.instances_by_region.get(str(region), self.available_instances)
-        else:
+        if not instances:
             instances = self.available_instances
 
         best = min(instances, key=lambda i: i.load_penalty)

@@ -36,7 +36,7 @@ class WebSocket:
 
     @property
     def is_connected(self) -> bool:
-        return self.__ws is not None and self.__ws.closed
+        return self.__ws is not None and not self.__ws.closed
 
     async def voice_server_update(self, guild_id, session_id, data):
         data = {
