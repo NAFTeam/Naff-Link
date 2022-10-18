@@ -9,3 +9,5 @@ class PlayerState:
     """The position of the player in seconds."""
     time: int = field(default=0)
     """The time this state was received (unix timestamp)."""
+    ping: int = field(default=0)
+    """The ping of the player in milliseconds."""
