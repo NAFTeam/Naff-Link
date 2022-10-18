@@ -5,13 +5,13 @@ from naff import Client as NaffClient
 from naff import Snowflake_Type, to_snowflake, Listener
 from naff.api.events import RawGatewayEvent
 
-from instance_manager import InstanceManager
-from . import get_logger
-from .events import PlayerUpdate, TrackStart, TrackEnd
-from .models.equalizer import Equalizer
-from .models.filters import Filter
-from .models.track import Track
-from .models.voice_state import VoiceState
+from naff_link import get_logger
+from naff_link.events import PlayerUpdate, TrackStart, TrackEnd
+from naff_link.instance_manager import InstanceManager
+from naff_link.models.equalizer import Equalizer
+from naff_link.models.filters import Filter
+from naff_link.models.track import Track
+from naff_link.models.voice_state import VoiceState
 
 log = get_logger()
 

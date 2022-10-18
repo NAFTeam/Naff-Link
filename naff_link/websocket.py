@@ -8,9 +8,9 @@ from naff.api.gateway.gateway import GatewayClient as NaffGateway
 from naff.client.utils import OverriddenJson
 
 from naff_link import events
-from . import get_logger
-from .enums import OPCodes as OP
-from .errors import LinkConnectionError
+from naff_link import get_logger
+from naff_link.enums import OPCodes as OP
+from naff_link.errors import LinkConnectionError
 
 if TYPE_CHECKING:
     from naff_link.models.instance import Instance
