@@ -101,8 +101,7 @@ class NaffLink(Extension):
             return
 
         await ws.voice_state_update(guild_id, None)
-        await player.stop()
-        player.channel_id = None
+        await self.lavalink.player_manager.destroy(guild_id)
 
     def get_player(self, guild: "Snowflake_Type") -> DefaultPlayer:
         guild_id = to_snowflake(guild)
