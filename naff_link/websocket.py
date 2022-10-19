@@ -107,7 +107,7 @@ class WebSocket:
 
             match data["op"]:
                 case "playerUpdate":
-                    self.bot_client.dispatch(events.PlayerUpdate.from_dict(self.client, data))
+                    self.__instance.update_player_state(data)
                 case "event":
                     await self.event_dispatcher(data)
                 case "stats":

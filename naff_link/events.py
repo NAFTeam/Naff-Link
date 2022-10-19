@@ -1,7 +1,7 @@
-from functools import cached_property
 from typing import TYPE_CHECKING
 
 from attr import define, field
+from naff import to_snowflake
 from naff.api.events import BaseEvent
 
 from naff_link.models.player_state import PlayerState
@@ -25,7 +25,7 @@ class _BaseLavaEvent(BaseEvent):
 @define()
 class PlayerUpdate(_BaseLavaEvent):
     state: PlayerState = field()
-    guild_id: int = field()
+    guild_id: int = field(converter=to_snowflake)
 
     @classmethod
     def from_dict(cls, naff_link: "Client", data: dict):

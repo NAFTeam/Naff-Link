@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING
 
 from attr import define, field
-from naff import MISSING
+from naff import MISSING, Snowflake_Type, to_snowflake
 
 from naff_link import get_logger, events
+from naff_link.models.player_state import PlayerState
 from naff_link.models.stats import Stats
 from naff_link.rest_api import RESTClient
 from naff_link.websocket import WebSocket
@@ -23,6 +24,7 @@ class Instance:
     password: str = field()
 
     stats: Stats = field(default=MISSING)
+    player_states: dict[Snowflake_Type, PlayerState] = field(factory=dict)
 
     region: str = field(default=None)
     _name_override: str = field(default=None)
@@ -93,8 +95,18 @@ class Instance:
 
         log.info(f"Connected to Lavalink instance: {self.name}")
 
+    def get_player_state(self, guild: Snowflake_Type) -> PlayerState | None:
+        return self.player_states.get(to_snowflake(guild), None)
+
     def update_stats(self, data: dict):
         event = events.StatsUpdate.from_dict(self._link_client, self, data)
         self._link_client.naff.dispatch(event)
         self.stats = event.stats
         log.debug(f"Updated stats for {self.name} :: {self.load_penalty = }")
+
+    def update_player_state(self, data: dict):
+        event = events.PlayerUpdate.from_dict(self._link_client, data)
+
+        self.player_states[event.guild_id] = event.state
+        self._link_client.naff.dispatch(event)
+        log.debug(f"Updated player state for {self.name} :: {event.guild_id}")

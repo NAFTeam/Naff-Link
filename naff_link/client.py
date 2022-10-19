@@ -10,6 +10,7 @@ from naff_link.events import PlayerUpdate, TrackStart, TrackEnd
 from naff_link.instance_manager import InstanceManager
 from naff_link.models.equalizer import Equalizer
 from naff_link.models.filters import Filter
+from naff_link.models.stats import Stats
 from naff_link.models.track import Track
 from naff_link.models.voice_state import VoiceState
 
@@ -278,3 +279,18 @@ class Client:
             payload |= _f.to_payload() if isinstance(_f, Filter) else _f
 
         await self._instance_manager.set_filters(guild_id, payload)
+
+    def get_stats(self, guild: Snowflake_Type) -> Stats:
+        """
+        Get the stats for a guild.
+
+        Args:
+            guild: The guild to get the stats for
+
+        Returns:
+            The stats for the guild
+        """
+        guild_id = to_snowflake(guild)
+        instance = self._instance_manager.get_instance_by_guild(guild_id)
+        if instance:
+            return instance.stats
