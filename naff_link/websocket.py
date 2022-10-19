@@ -101,6 +101,19 @@ class WebSocket:
             log.info("Successfully connected to lavalink")
         asyncio.create_task(self.rcv())
 
+    async def reconnect_exponential(self, attempt: int = 1):
+        await asyncio.sleep(2**attempt)
+        log.warning(f"Attempting to reconnect to lavalink ({attempt})")
+        try:
+            await self.connect()
+        except LinkConnectionError as e:
+            log.warning(f"Failed to reconnect to lavalink ({attempt})")
+            await self.reconnect_exponential(attempt + 1)
+            if attempt > 5:
+                log.critical("Failed to reconnect to lavalink after 5 attempts, giving up", exc_info=e)
+        else:
+            log.info("Reconnected to lavalink")
+
     async def rcv(self):
         async for message in self.__ws:
             data = OverriddenJson.loads(message.data)
@@ -115,6 +128,7 @@ class WebSocket:
                 case _:
                     log.debug(f"Unknown payload received from lavalink:: {message.type} :: {message.data}")
         log.warning(f"{self.__instance.name}:: Websocket Disconnected")
+        await self.reconnect_exponential()
 
     async def event_dispatcher(self, event: dict):
         match event["type"]:
