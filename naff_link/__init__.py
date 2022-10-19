@@ -1,5 +1,5 @@
-import logging
+from naff_link.main import NaffLink
 
 
-def get_logger():
-    return logging.getLogger("NAFF-Link")
+def setup(bot):
+    NaffLink(bot)
